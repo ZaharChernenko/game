@@ -2,6 +2,7 @@ import sys
 from random import randint, randrange
 
 import pygame
+from Header import Header
 from MenuButton import MenuButton
 
 
@@ -19,18 +20,23 @@ def singleton(_class):
 class Game:
     def __init__(self, screen_size: tuple[int, int] = (1200, 800)) -> None:
         pygame.init()
+        pygame.display.set_caption("Geometry Dash")
+
         self.screen: pygame.Surface = pygame.display.set_mode(screen_size)
+        self.width: int = screen_size[0]
+        self.height: int = screen_size[1]
 
         # Инициализация заднего фона
         self.background_image: pygame.Surface | None = None
         self.background_rect: pygame.Rect | None = None
         self.background_color: tuple[int, int, int] | None = None
         self._backgroundInit()
+        # конец инициализации фона
 
-        pygame.display.set_caption("Geometry Dash")
+        self.header: Header = Header(self.width // 2 - 743 // 2, 210)
 
         self.play_button: MenuButton = MenuButton(
-            screen_size[0] // 2 - 50, screen_size[1] // 2 - 50, 100, 100, "play_btn.png")
+            self.width // 2 - 50, self.height // 2 - 25, 100, 100, "play_btn.png")
 
         running: bool = True
         while running:
@@ -49,6 +55,7 @@ class Game:
             mouse_tuple: tuple[int, int] = pygame.mouse.get_pos()
             self.play_button.checkHover(mouse_tuple)
             self.play_button.draw(self.screen)
+            self.header.draw(self.screen)
             pygame.display.flip()  # обновить весь экран
 
         pygame.quit()
