@@ -1,8 +1,10 @@
+import sqlite3
 import sys
 from random import randint, randrange
 
 import pygame
 from Header import Header
+from LevelButton import LevelButton
 from MenuButton import MenuButton
 
 
@@ -19,6 +21,9 @@ def singleton(_class):
 @singleton
 class Game:
     def __init__(self, screen_size: tuple[int, int] = (1200, 800)) -> None:
+        self.client: sqlite3.Connection | None = None
+        self.databaseInit()
+
         pygame.init()
         pygame.display.set_caption("Geometry Dash")
 
@@ -38,25 +43,9 @@ class Game:
         self.play_button: MenuButton = MenuButton(
             self.width // 2 - 50, self.height // 2 - 25, 100, 100, "play_btn.png")
 
-        running: bool = True
-        while running:
-            # Дублирование фона по горизонтали и вертикали
-            for x in range(0, self.screen.get_width(), self.background_image.get_width()):
-                for y in range(0, self.screen.get_height(), self.background_image.get_height()):
-                    self.screen.blit(self.background_image, (x, y))
+        self.back_button: MenuButton = MenuButton(50, 50, 52, 68, "back_btn.png")
 
-            # self.screen.fill((0, 0, 0))  очистка экрана
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                    pygame.quit()
-                    sys.exit()
-
-            mouse_tuple: tuple[int, int] = pygame.mouse.get_pos()
-            self.play_button.checkHover(mouse_tuple)
-            self.play_button.draw(self.screen)
-            self.header.draw(self.screen)
-            pygame.display.flip()  # обновить весь экран
+        self.enterScreen()
 
         pygame.quit()
         sys.exit()
@@ -68,3 +57,85 @@ class Game:
         # Задаем случайный цвет для фона
         self.background_color = (randint(0, 255), randint(0, 255), randint(0, 255))
         self.background_image.fill(self.background_color, special_flags=pygame.BLEND_MULT)
+
+    def enterScreen(self):
+        running: bool = True
+        while running:
+            # Дублирование фона по горизонтали и вертикали
+            for x in range(0, self.screen.get_width(), self.background_image.get_width()):
+                for y in range(0, self.screen.get_height(), self.background_image.get_height()):
+                    self.screen.blit(self.background_image, (x, y))
+
+            # self.screen.fill((0, 0, 0))  очистка экрана
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                running = not self.play_button.isClicked(event)
+
+            mouse_tuple: tuple[int, int] = pygame.mouse.get_pos()
+            if self.play_button.checkHover(mouse_tuple):
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+            else:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+
+            self.play_button.draw(self.screen)
+            self.header.draw(self.screen)
+            pygame.display.flip()  # обновить весь экран
+
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+        self.mainScreen()
+
+    def databaseInit(self):
+        self.client = sqlite3.connect("user/levels.db")
+
+        cursor = self.client.cursor()
+
+        cursor.execute("""CREATE TABLE IF NOT EXISTS levels (
+            name TEXT PRIMARY KEY,
+            difficulty INTEGER NOT NULL,
+            coins INTEGER CHECK (coins BETWEEN 0 AND 3),
+            completion_rate REAL CHECK (completion_rate BETWEEN 0 AND 100))""")
+
+        self.client.commit()
+
+    def getLevelData(self):
+        cursor = self.client.cursor()
+        cursor.execute("SELECT * FROM levels")
+        return cursor.fetchall()
+
+    def mainScreen(self):
+        running: bool = True
+        # l = LevelButton("STEREO MADNESS")
+        level_buttons: tuple[LevelButton, ...] = tuple(LevelButton(*level) for level in self.getLevelData())
+        # Функция отрисовки кнопки
+
+        while running:
+            for x in range(0, self.screen.get_width(), self.background_image.get_width()):
+                for y in range(0, self.screen.get_height(), self.background_image.get_height()):
+                    self.screen.blit(self.background_image, (x, y))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    pygame.quit()
+                    sys.exit()
+                running = not self.back_button.isClicked(event)
+
+            mouse_tuple: tuple[int, int] = pygame.mouse.get_pos()
+            for level_button in level_buttons:
+                level_button.checkHover(mouse_tuple)
+                level_button.draw(self.screen)
+
+            if any(level_button.checkHover(mouse_tuple) for level_button in level_buttons) or self.back_button.checkHover(mouse_tuple):
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+            else:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+
+            self.back_button.draw(self.screen)
+
+            # self.draw_button()
+            pygame.display.flip()
+
+        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+        self.enterScreen()

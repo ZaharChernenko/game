@@ -23,15 +23,11 @@ class MenuButton:
         screen.blit(current_icon, (x, y))  # отрисовываем кнопку
         self.rect = self.icon.get_rect(topleft=(x, y))
 
-    def checkHover(self, mouse_pos) -> None:
+    def checkHover(self, mouse_pos) -> bool:
         """проверяет, находится ли точка, координаты которой были
         переданы в качестве аргумента, в пределах прямоугольника"""
         self.is_hovered = self.rect.collidepoint(mouse_pos)
-        if self.is_hovered:
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-        else:
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+        return self.is_hovered
 
-    def handleEvent(self, event):
-        pass
-        # if event.type == pygame.MOU
+    def isClicked(self, event) -> bool:
+        return event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.is_hovered
