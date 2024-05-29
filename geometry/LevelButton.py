@@ -5,6 +5,7 @@ digit2difficulty_icon: dict[int, str] = {1: "easiest.png"}
 
 class LevelButton:
     def __init__(self, level_name: str, difficulty: int, n_coins: int, percentage: int):
+        self.level_name = level_name
         percentage = int(percentage)
         self.is_hovered: bool = False
         font: pygame.font.Font = pygame.font.SysFont("pusab", 36)
@@ -75,3 +76,9 @@ class LevelButton:
     def checkHover(self, mouse_pos) -> bool:
         self.is_hovered = self.upper_button_rect.collidepoint(mouse_pos)
         return self.is_hovered
+
+    def isClicked(self, event) -> bool:
+        return event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.is_hovered
+
+    def getLevelName(self) -> str:
+        return self.level_name

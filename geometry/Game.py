@@ -1,9 +1,11 @@
 import sqlite3
 import sys
+from pdb import run
 from random import randint, randrange
 
 import pygame
 from Header import Header
+from Level import Level
 from LevelButton import LevelButton
 from MenuButton import MenuButton
 
@@ -35,7 +37,7 @@ class Game:
         self.background_image: pygame.Surface | None = None
         self.background_rect: pygame.Rect | None = None
         self.background_color: tuple[int, int, int] | None = None
-        self._backgroundInit()
+        self.backgroundInit()
         # конец инициализации фона
 
         self.header: Header = Header(self.width // 2 - 743 // 2, 210)
@@ -50,7 +52,7 @@ class Game:
         pygame.quit()
         sys.exit()
 
-    def _backgroundInit(self):
+    def backgroundInit(self):
         # Случайный задний фон
         self.background_image = pygame.image.load(fr"../resources/background/game_bg_{randrange(1, 6)}.png").convert()
         self.background_rect = self.background_image.get_rect()
@@ -58,14 +60,16 @@ class Game:
         self.background_color = (randint(0, 255), randint(0, 255), randint(0, 255))
         self.background_image.fill(self.background_color, special_flags=pygame.BLEND_MULT)
 
+    def drawBackground(self):
+        # Дублирование фона по горизонтали и вертикали
+        for x in range(0, self.screen.get_width(), self.background_image.get_width()):
+            for y in range(0, self.screen.get_height(), self.background_image.get_height()):
+                self.screen.blit(self.background_image, (x, y))
+
     def enterScreen(self):
         running: bool = True
         while running:
-            # Дублирование фона по горизонтали и вертикали
-            for x in range(0, self.screen.get_width(), self.background_image.get_width()):
-                for y in range(0, self.screen.get_height(), self.background_image.get_height()):
-                    self.screen.blit(self.background_image, (x, y))
-
+            self.drawBackground()
             # self.screen.fill((0, 0, 0))  очистка экрана
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -106,21 +110,27 @@ class Game:
 
     def mainScreen(self):
         running: bool = True
-        # l = LevelButton("STEREO MADNESS")
+        level_start: bool = False
         level_buttons: tuple[LevelButton, ...] = tuple(LevelButton(*level) for level in self.getLevelData())
-        # Функция отрисовки кнопки
 
         while running:
-            for x in range(0, self.screen.get_width(), self.background_image.get_width()):
-                for y in range(0, self.screen.get_height(), self.background_image.get_height()):
-                    self.screen.blit(self.background_image, (x, y))
-
+            self.drawBackground()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
                     pygame.quit()
                     sys.exit()
-                running = not self.back_button.isClicked(event)
+
+                if self.back_button.isClicked(event):
+                    running = False
+                    break
+
+                for level_button in level_buttons:
+                    if level_button.isClicked(event):
+                        running = False
+                        level_start = True
+                        level_name: str = level_button.getLevelName()
+                        break
 
             mouse_tuple: tuple[int, int] = pygame.mouse.get_pos()
             for level_button in level_buttons:
@@ -134,8 +144,15 @@ class Game:
 
             self.back_button.draw(self.screen)
 
-            # self.draw_button()
             pygame.display.flip()
 
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-        self.enterScreen()
+
+        if not level_start:
+            self.enterScreen()
+        else:
+            self.levelScreen(level_name)
+
+    def levelScreen(self, level_name: str):
+        level = Level(self.screen, level_name, self.drawBackground)
+        level.run()
