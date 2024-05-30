@@ -1,6 +1,5 @@
 import sqlite3
 import sys
-from pdb import run
 from random import randint, randrange
 
 import pygame
@@ -155,4 +154,7 @@ class Game:
 
     def levelScreen(self, level_name: str):
         level = Level(self.screen, level_name, self.drawBackground)
-        level.run()
+        is_exit: bool = level.run()
+        while not is_exit:
+            is_exit = level.run()
+        self.mainScreen()
