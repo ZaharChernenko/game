@@ -5,15 +5,21 @@ import sys
 import pygame
 from MenuButton import MenuButton
 
+player_image: pygame.Surface = pygame.image.load("../resources/tileset/avatar.png")
+player_image = pygame.transform.smoothscale(player_image, (32, 32))
+
+block_image: pygame.Surface = pygame.image.load("../resources/tileset/block_32px.png")
+
+spike_image: pygame.Surface = pygame.image.load("../resources/tileset/spike_32px.png")
+spike_mask = pygame.mask.from_surface(spike_image)
+
+orb_image: pygame.Surface = pygame.image.load("../resources/tileset/orb_32px.png")
+
 
 class Level:
     def __init__(self, screen: pygame.Surface, level_name: str, draw_background_func) -> None:
         self.screen: pygame.Surface = screen
         self.draw_background_func = draw_background_func
-        self.player_image: pygame.Surface = pygame.image.load("../resources/tileset/avatar.png")
-        self.player_image = pygame.transform.smoothscale(self.player_image, (32, 32))
-        self.block_image: pygame.Surface = pygame.image.load("../resources/tileset/block_32px.png")
-        self.spike_image: pygame.Surface = pygame.image.load("../resources/tileset/spike_32px.png")
 
         self.level_data_list: list[list[str]] = list(csv.reader(
             open("test.csv", encoding="utf-8"), delimiter=",", quotechar="\""))
@@ -31,11 +37,13 @@ class Level:
             for element in row:
                 match element:
                     case "0":
-                        self.player = Player(self.player_image, (x, y), self.level_data_group)
+                        self.player = Player(player_image, (x, y), self.level_data_group)
                     case "2":
-                        Block(self.block_image, (x, y), self.level_data_group)
+                        Block(block_image, (x, y), self.level_data_group)
                     case "3":
-                        Spike(self.spike_image, (x, y), self.level_data_group)
+                        Spike(spike_image, (x, y), self.level_data_group)
+                    case "4":
+                        Orb(orb_image, (x, y), self.level_data_group)
                 x += 32
             x = 0
             y += 32
@@ -89,6 +97,7 @@ class GDObjectType(enum.IntEnum):
     PLAYER = 0
     BLOCK = 1
     SPIKE = 2
+    ORB = 3
 
 
 class GDObject(pygame.sprite.Sprite):
@@ -109,12 +118,17 @@ class Spike(GDObject):
         super().__init__(image, pos, GDObjectType.SPIKE, *groups)
 
 
+class Orb(GDObject):
+    def __init__(self, image: pygame.Surface, pos, *groups) -> None:
+        super().__init__(image, pos, GDObjectType.ORB, *groups)
+
+
 class Player(GDObject):
     def __init__(self, image: pygame.Surface, pos, *groups) -> None:
         super().__init__(image, pos, GDObjectType.PLAYER, *groups)
         self.on_ground: bool = True
         self.is_jump: bool = False
-        self.x_speed: float = 5
+        self.x_speed: float = 5.5
         self.y_speed: float = 0
         self.jump_strength: float = 11
 
@@ -147,7 +161,7 @@ class Player(GDObject):
                         # Проверяем пересечение по оси Y
                         if self.y_speed > 0:
                             # Добавляем небольшую погрешность для "мягкого" приземления
-                            if self.rect.bottom - obj.rect.top <= 8:
+                            if self.rect.bottom - obj.rect.top <= 10:
                                 self.rect.bottom = obj.rect.top
                                 self.y_speed = 0
                                 self.on_ground = True
@@ -165,3 +179,16 @@ class Player(GDObject):
                         else:
                             # Столкновение по горизонтали
                             self.is_died = True
+
+                    case GDObjectType.SPIKE:
+                        offset_x = self.rect.left - obj.rect.left
+                        offset_y = self.rect.top - obj.rect.top
+                        if spike_mask.overlap(pygame.mask.Mask(obj.rect.size, True), (offset_x, offset_y)):
+                            self.is_died = True
+
+                    case GDObjectType.ORB:
+                        keys = pygame.key.get_pressed()
+                        if (keys[pygame.K_UP] or keys[pygame.K_SPACE]):
+                            self.jump_strength = 15  # gives a little boost when hit orb
+                            self.jump()
+                            self.jump_strength = 11  # return jump_amount to normal
