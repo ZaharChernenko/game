@@ -15,17 +15,21 @@ spike_mask = pygame.mask.from_surface(spike_image)
 
 orb_image: pygame.Surface = pygame.image.load("../resources/tileset/orb_32px.png")
 
+pygame.mixer.init()
+death_sound: pygame.mixer.Sound = pygame.mixer.Sound('../resources/sound/death.mp3')
+
 
 class Level:
     def __init__(self, screen: pygame.Surface, level_name: str, draw_background_func) -> None:
+        self.level_name: str = level_name
         self.screen: pygame.Surface = screen
         self.draw_background_func = draw_background_func
 
         self.level_data_list: list[list[str]] = list(csv.reader(
-            open("test.csv", encoding="utf-8"), delimiter=",", quotechar="\""))
+            open(fr"../levels/{self.level_name}.csv", encoding="utf-8"), delimiter=",", quotechar="\""))
         self.level_data_group: pygame.sprite.Group | None = None
         self.player: Player | None = None
-
+        self.level_sound: pygame.mixer.Sound = pygame.mixer.Sound(fr"../resources/sound/{self.level_name}.mp3")
         self.back_button: MenuButton = MenuButton(50, 50, 52, 68, "back_btn.png")
 
     def initElements(self) -> None:
@@ -61,6 +65,7 @@ class Level:
         self.initElements()
         clock: pygame.time.Clock = pygame.time.Clock()
         running: bool = True
+        self.level_sound.play()
 
         while running:
             self.moveMap()
@@ -77,6 +82,7 @@ class Level:
                     sys.exit()
 
                 if self.back_button.isClicked(event):
+                    self.level_sound.stop()
                     return True
             mouse_tuple: tuple[int, int] = pygame.mouse.get_pos()
             if self.back_button.checkHover(mouse_tuple):
@@ -85,11 +91,13 @@ class Level:
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
             if self.player.is_died:
+                self.level_sound.stop()
                 return False
 
             clock.tick(60)
             pygame.display.flip()
 
+        self.level_sound.stop()
         return False
 
 
@@ -168,6 +176,7 @@ class Player(GDObject):
                                 self.is_jump = False
                             else:
                                 self.is_died = True
+                                break
 
                         elif self.y_speed < 0:
                             # Аналогично, добавляем погрешность при ударе головой
@@ -175,16 +184,19 @@ class Player(GDObject):
                                 self.rect.top = obj.rect.bottom
                             else:
                                 self.is_died = True
+                                break
 
                         else:
                             # Столкновение по горизонтали
                             self.is_died = True
+                            break
 
                     case GDObjectType.SPIKE:
                         offset_x = self.rect.left - obj.rect.left
                         offset_y = self.rect.top - obj.rect.top
                         if spike_mask.overlap(pygame.mask.Mask(obj.rect.size, True), (offset_x, offset_y)):
                             self.is_died = True
+                            break
 
                     case GDObjectType.ORB:
                         keys = pygame.key.get_pressed()
@@ -192,3 +204,6 @@ class Player(GDObject):
                             self.jump_strength = 15  # gives a little boost when hit orb
                             self.jump()
                             self.jump_strength = 11  # return jump_amount to normal
+
+        if self.is_died:
+            death_sound.play()

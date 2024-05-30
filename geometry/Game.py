@@ -27,6 +27,9 @@ class Game:
 
         pygame.init()
         pygame.display.set_caption("Geometry Dash")
+        pygame.mixer.init()
+        self.menu_sound: pygame.mixer.Sound = pygame.mixer.Sound('../resources/sound/menu.mp3')
+        self.menu_sound.play(-1)
 
         self.screen: pygame.Surface = pygame.display.set_mode(screen_size)
         self.width: int = screen_size[0]
@@ -153,8 +156,10 @@ class Game:
             self.levelScreen(level_name)
 
     def levelScreen(self, level_name: str):
+        self.menu_sound.stop()
         level = Level(self.screen, level_name, self.drawBackground)
         is_exit: bool = level.run()
         while not is_exit:
             is_exit = level.run()
+        self.menu_sound.play(-1)
         self.mainScreen()
