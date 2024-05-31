@@ -15,6 +15,7 @@ spike_mask = pygame.mask.from_surface(spike_image)
 
 orb_image: pygame.Surface = pygame.image.load("../resources/tileset/orb_32px.png")
 
+
 pygame.mixer.init()
 death_sound: pygame.mixer.Sound = pygame.mixer.Sound('../resources/sound/death.mp3')
 
@@ -29,8 +30,12 @@ class Level:
             open(fr"../levels/{self.level_name}.csv", encoding="utf-8"), delimiter=",", quotechar="\""))
         self.level_data_group: pygame.sprite.Group | None = None
         self.player: Player | None = None
+
         self.level_sound: pygame.mixer.Sound = pygame.mixer.Sound(fr"../resources/sound/{self.level_name}.mp3")
+        self.font: pygame.font.Font = pygame.font.SysFont("pusab", 36)
         self.back_button: MenuButton = MenuButton(50, 50, 52, 68, "back_btn.png")
+        self.level_width: int = len(self.level_data_list[0]) * 32
+        self.best_result: int = 0
 
     def initElements(self) -> None:
         self.level_data_group = pygame.sprite.Group()
@@ -71,6 +76,7 @@ class Level:
             self.moveMap()
             self.draw()
             self.back_button.draw(self.screen)
+            self.drawProgressBar()
             keys = pygame.key.get_pressed()
             if keys[pygame.K_UP] or keys[pygame.K_SPACE]:
                 self.player.is_jump = True
@@ -97,8 +103,25 @@ class Level:
             clock.tick(60)
             pygame.display.flip()
 
+            if self.level_width <= self.player.x:
+                self.level_sound.stop()
+                self.best_result = 100
+                return True
+
+            self.player.x += self.player.x_speed
+            self.best_result = max(self.best_result, int(self.player.x / self.level_width * 100))
+
         self.level_sound.stop()
         return False
+
+    def drawProgressBar(self):
+        bar_width = 600
+        pygame.draw.rect(self.screen, (0, 0, 0), (300, 50, bar_width, 20), 2)
+        fill_width = self.player.x / self.level_width * bar_width
+        pygame.draw.rect(self.screen, (0, 255, 0), (302, 50 + 2, fill_width - 4, 20 - 4))
+        text = self.font.render(f"{int(fill_width / bar_width * 100)}%", True, (255, 255, 255))
+        text_rect = text.get_rect(midleft=(300 + bar_width + 40, 60))  # справа от бара
+        self.screen.blit(text, text_rect)
 
 
 class GDObjectType(enum.IntEnum):
@@ -138,6 +161,7 @@ class Player(GDObject):
         self.is_jump: bool = False
         self.x_speed: float = 5.5
         self.y_speed: float = 0
+        self.x: float = -32
         self.jump_strength: float = 11
 
         self.is_died: bool = False

@@ -132,6 +132,7 @@ class Game:
                         running = False
                         level_start = True
                         level_name: str = level_button.getLevelName()
+                        level_percentage: int = level_button.getPercentage()
                         break
 
             mouse_tuple: tuple[int, int] = pygame.mouse.get_pos()
@@ -153,13 +154,18 @@ class Game:
         if not level_start:
             self.enterScreen()
         else:
-            self.levelScreen(level_name)
+            self.levelScreen(level_name, level_percentage)
 
-    def levelScreen(self, level_name: str):
+    def levelScreen(self, level_name: str, level_percentage: int):
         self.menu_sound.stop()
         level = Level(self.screen, level_name, self.drawBackground)
         is_exit: bool = level.run()
         while not is_exit:
             is_exit = level.run()
         self.menu_sound.play(-1)
+
+        if level.best_result > level_percentage:
+            cursor = self.client.cursor()
+            cursor.execute("UPDATE levels SET completion_rate = ? WHERE name = ?", (level.best_result, level_name))
+            self.client.commit()
         self.mainScreen()

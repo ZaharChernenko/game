@@ -6,14 +6,14 @@ digit2difficulty_icon: dict[int, str] = {1: "easiest.png"}
 class LevelButton:
     def __init__(self, level_name: str, difficulty: int, n_coins: int, percentage: int):
         self.level_name = level_name
-        percentage = int(percentage)
+        self.percentage = int(percentage)
         self.is_hovered: bool = False
         font: pygame.font.Font = pygame.font.SysFont("pusab", 36)
         self.level_text: pygame.Surface = font.render(level_name, True, (255, 255, 255))
         self.normal_mode_text: pygame.Surface = font.render("Normal Mode", True, (255, 255, 255))
 
         font = pygame.font.SysFont("pusab", 24)
-        self.normal_mode_percentage_text: pygame.Surface = font.render(f"{percentage}%", True, (255, 255, 255))
+        self.normal_mode_percentage_text: pygame.Surface = font.render(f"{self.percentage}%", True, (255, 255, 255))
 
         self.main_width: int = 700
         self.main_height: int = 500
@@ -69,7 +69,7 @@ class LevelButton:
         self.main_surface.blit(self.normal_mode_text, ((self.main_width - self.normal_mode_text.get_width()
                                                         ) // 2, (self.main_height - self.level_text.get_height()) // 2))
 
-        self.main_surface.blit(self.normal_mode_percentage_text, (self.main_width - 20 - self.normal_mode_percentage_text.get_width(),
+        self.main_surface.blit(self.normal_mode_percentage_text, (self.main_width - 10 - self.normal_mode_percentage_text.get_width(),
                                                                   285))
         screen.blit(self.main_surface, (self.x, self.y))
 
@@ -82,3 +82,6 @@ class LevelButton:
 
     def getLevelName(self) -> str:
         return self.level_name
+
+    def getPercentage(self) -> int:
+        return self.percentage
