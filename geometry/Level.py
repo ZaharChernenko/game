@@ -108,7 +108,7 @@ class Level:
                 self.best_result = 100
                 return True
 
-            self.player.x += self.player.x_speed
+            self.player.x += self.player.x_speed - 0.5
             self.best_result = max(self.best_result, int(self.player.x / self.level_width * 100))
 
         self.level_sound.stop()

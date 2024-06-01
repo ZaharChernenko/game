@@ -1,6 +1,6 @@
 import pygame
 
-digit2difficulty_icon: dict[int, str] = {1: "easiest.png"}
+digit2difficulty_icon: dict[int, str] = {1: "easiest.png", 2: "easiest.png"}
 
 
 class LevelButton:

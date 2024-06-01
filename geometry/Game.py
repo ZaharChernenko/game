@@ -48,7 +48,10 @@ class Game:
             self.width // 2 - 50, self.height // 2 - 25, 100, 100, "play_btn.png")
 
         self.back_button: MenuButton = MenuButton(50, 50, 52, 68, "back_btn.png")
+        self.prev_button: MenuButton = MenuButton(50, 200, 52, 68, "back_btn.png")
+        self.next_button: MenuButton = MenuButton(1100, 200, 52, 68, "next_btn.png")
 
+        self.active_index: int = 0
         self.enterScreen()
 
         pygame.quit()
@@ -127,25 +130,36 @@ class Game:
                     running = False
                     break
 
-                for level_button in level_buttons:
-                    if level_button.isClicked(event):
-                        running = False
-                        level_start = True
-                        level_name: str = level_button.getLevelName()
-                        level_percentage: int = level_button.getPercentage()
-                        break
+                if self.prev_button.isClicked(event):
+                    self.active_index -= 1
+                    if self.active_index < 0:
+                        self.active_index = len(level_buttons) - 1
+
+                if self.next_button.isClicked(event):
+                    self.active_index += 1
+                    if self.active_index >= len(level_buttons):
+                        self.active_index = 0
+
+                if level_buttons[self.active_index].isClicked(event):
+                    running = False
+                    level_start = True
+                    level_name: str = level_buttons[self.active_index].getLevelName()
+                    level_percentage: int = level_buttons[self.active_index].getPercentage()
 
             mouse_tuple: tuple[int, int] = pygame.mouse.get_pos()
-            for level_button in level_buttons:
-                level_button.checkHover(mouse_tuple)
-                level_button.draw(self.screen)
+            level_buttons[self.active_index].draw(self.screen)
 
-            if any(level_button.checkHover(mouse_tuple) for level_button in level_buttons) or self.back_button.checkHover(mouse_tuple):
+            if (level_buttons[self.active_index].checkHover(mouse_tuple) or
+                    self.back_button.checkHover(mouse_tuple) or
+                    self.prev_button.checkHover(mouse_tuple) or
+                    self.next_button.checkHover(mouse_tuple)):
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
             else:
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
             self.back_button.draw(self.screen)
+            self.prev_button.draw(self.screen)
+            self.next_button.draw(self.screen)
 
             pygame.display.flip()
 
