@@ -161,7 +161,7 @@ class Player(GDObject):
         self.is_jump: bool = False
         self.x_speed: float = 5.5
         self.y_speed: float = 0
-        self.x: float = -32
+        self.x: float = 0
         self.jump_strength: float = 11
 
         self.is_died: bool = False
